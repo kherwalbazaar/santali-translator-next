@@ -1,0 +1,112 @@
+"use client";
+
+import { useState } from "react";
+import Header from "@/components/Header";
+import NavigationPills from "@/components/NavigationPills";
+import TranslationCard from "@/components/TranslationCard";
+import ResultCard from "@/components/ResultCard";
+import LanguageGrid from "@/components/LanguageGrid";
+import FooterBanner from "@/components/FooterBanner";
+import BottomNav from "@/components/BottomNav";
+import DictionarySection from "@/components/DictionarySection";
+
+const getStoredWords = () => {
+  if (typeof window === "undefined") return [];
+  const stored = localStorage.getItem("santaliDictionary");
+  return stored ? JSON.parse(stored) : [];
+};
+
+const saveToStorage = (word: { santali: string; english: string; meaning: string; example: string }) => {
+  const stored = getStoredWords();
+  const exists = stored.some(
+    (w: { english: string }) => w.english.toLowerCase() === word.english.toLowerCase()
+  );
+  if (!exists) {
+    stored.push({ ...word, source: "database" });
+    localStorage.setItem("santaliDictionary", JSON.stringify(stored));
+  }
+};
+
+const searchInLocalStorage = (term: string, from: string, to: string) => {
+  const stored = getStoredWords();
+  return stored.find(
+    (w: { english: string; santali: string }) =>
+      (from === "en" && w.english.toLowerCase() === term.toLowerCase()) ||
+      (to === "en" && w.santali.toLowerCase() === term.toLowerCase())
+  ) || null;
+};
+
+export default function Home() {
+  const [translatedText, setTranslatedText] = useState("");
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [activeTab, setActiveTab] = useState("home");
+  const [toLang, setToLang] = useState("Santali");
+
+  const handleTranslate = async (text: string, from: string, to: string) => {
+    if (!text.trim()) return;
+    setIsTranslating(true);
+
+    const isSingleWord = text.trim().split(/\s+/).length === 1;
+
+    try {
+      if (isSingleWord) {
+        const localResult = searchInLocalStorage(text.trim(), from, to);
+
+        if (localResult) {
+          const translated = from === "en" ? localResult.santali : localResult.english;
+          setTranslatedText(translated);
+          setIsTranslating(false);
+          return;
+        }
+      }
+
+      const res = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`
+      );
+      const data = await res.json();
+      const translated = data.responseData.translatedText;
+      setTranslatedText(translated);
+
+      if (isSingleWord && translated && translated.toLowerCase() !== text.trim().toLowerCase()) {
+        if (from === "en") {
+          saveToStorage({ santali: translated, english: text.trim(), meaning: `"${text.trim()}" in Santali`, example: translated });
+        } else if (to === "en") {
+          saveToStorage({ santali: text.trim(), english: translated, meaning: `"${text.trim()}" in English`, example: text.trim() });
+        }
+      }
+    } catch {
+      setTranslatedText("Translation failed. Please try again.");
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  return (
+    <div className="bg-[#f8faf9] min-h-screen flex flex-col justify-between">
+      <Header />
+
+      {activeTab === "home" || activeTab === "translate" ? (
+        <div className="flex-1 -mt-4 px-3.5 pt-4 pb-20 overflow-y-auto space-y-3.5">
+          <NavigationPills activeTab={activeTab} onTabChange={setActiveTab} />
+          <TranslationCard onTranslate={handleTranslate} isTranslating={isTranslating} toLang={toLang} onToLangChange={setToLang} />
+          <ResultCard translatedText={translatedText} />
+          <LanguageGrid onLanguageSelect={setToLang} />
+          <FooterBanner />
+        </div>
+      ) : activeTab === "dictionary" ? (
+        <div className="flex-1 flex flex-col">
+          <DictionarySection />
+        </div>
+      ) : (
+        <div className="flex-1 -mt-4 px-3.5 pt-4 pb-20 overflow-y-auto space-y-3.5">
+          <NavigationPills activeTab={activeTab} onTabChange={setActiveTab} />
+          <div className="text-center text-gray-400 text-xs py-10">
+            Coming soon...
+          </div>
+        </div>
+      )}
+
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+    </div>
+  );
+}
