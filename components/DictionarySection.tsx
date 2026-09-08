@@ -104,7 +104,8 @@ export default function DictionarySection() {
           }));
 
         setWordSections(sections);
-      } catch {
+      } catch (err) {
+        console.error("Failed to fetch words from Firestore:", err);
         setWordSections([]);
       } finally {
         setIsLoadingWords(false);
@@ -147,6 +148,54 @@ export default function DictionarySection() {
     }
   };
 
+  const saveToFirestore = async (result: SearchResult) => {
+    try {
+      const wordData = {
+        santali: result.santali,
+        english: result.english,
+        pos: "Noun",
+        posColor: "pink",
+        meaning: result.meaning,
+        roman: "",
+        example: result.example,
+        exampleEn: "",
+        letter: result.english.charAt(0).toUpperCase(),
+      };
+
+      const docRef = await addDoc(collection(db, "words"), wordData);
+
+      const newWord: Word = {
+        santali: wordData.santali,
+        pos: wordData.pos,
+        posColor: wordData.posColor,
+        meaning: wordData.meaning,
+        roman: wordData.roman,
+        example: wordData.example,
+        exampleEn: wordData.exampleEn,
+        letter: wordData.letter,
+      };
+
+      setWordSections((prev) => {
+        const existing = prev.find((s) => s.letter === newWord.letter);
+        if (existing) {
+          return prev.map((s) =>
+            s.letter === newWord.letter
+              ? { ...s, count: s.count + 1, items: [...s.items, newWord] }
+              : s
+          );
+        }
+        const newSection: LetterSection = {
+          letter: newWord.letter,
+          count: 1,
+          items: [newWord],
+        };
+        return [...prev, newSection].sort((a, b) => a.letter.localeCompare(b.letter));
+      });
+    } catch {
+      // Firestore save failed, word still shows in search results
+    }
+  };
+
   const handleSearch = async () => {
     if (!search.trim()) return;
     setIsSearching(true);
@@ -165,6 +214,7 @@ export default function DictionarySection() {
     if (aiResult) {
       saveToStorage({ ...aiResult, source: "database" });
       setSearchResults([{ ...aiResult, source: "database" }]);
+      saveToFirestore(aiResult);
     } else {
       setSearchResults([]);
     }

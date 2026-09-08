@@ -9,6 +9,8 @@ import LanguageGrid from "@/components/LanguageGrid";
 import FooterBanner from "@/components/FooterBanner";
 import BottomNav from "@/components/BottomNav";
 import DictionarySection from "@/components/DictionarySection";
+import { db } from "@/lib/firebase";
+import { collection, addDoc } from "firebase/firestore";
 
 const getStoredWords = () => {
   if (typeof window === "undefined") return [];
@@ -34,6 +36,25 @@ const searchInLocalStorage = (term: string, from: string, to: string) => {
       (from === "en" && w.english.toLowerCase() === term.toLowerCase()) ||
       (to === "en" && w.santali.toLowerCase() === term.toLowerCase())
   ) || null;
+};
+
+const saveToFirestore = async (santali: string, english: string) => {
+  try {
+    const letter = english.charAt(0).toUpperCase();
+    await addDoc(collection(db, "words"), {
+      santali,
+      english,
+      pos: "Noun",
+      posColor: "pink",
+      meaning: `"${english}" in Santali`,
+      roman: "",
+      example: santali,
+      exampleEn: "",
+      letter,
+    });
+  } catch {
+    // Firestore save failed silently
+  }
 };
 
 export default function Home() {
@@ -70,8 +91,10 @@ export default function Home() {
       if (isSingleWord && translated && translated.toLowerCase() !== text.trim().toLowerCase()) {
         if (from === "en") {
           saveToStorage({ santali: translated, english: text.trim(), meaning: `"${text.trim()}" in Santali`, example: translated });
+          saveToFirestore(translated, text.trim());
         } else if (to === "en") {
           saveToStorage({ santali: text.trim(), english: translated, meaning: `"${text.trim()}" in English`, example: text.trim() });
+          saveToFirestore(text.trim(), translated);
         }
       }
     } catch {
