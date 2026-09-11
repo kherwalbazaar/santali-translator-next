@@ -4,7 +4,7 @@ import { Settings } from "lucide-react";
 
 export default function Header() {
   return (
-    <div className="relative bg-gradient-to-b from-[#831843] via-[#9d174d] to-[#be185d] pt-3 pb-8 px-4 text-white overflow-hidden">
+    <div className="relative bg-gradient-to-b from-[#831843] via-[#9d174d] to-[#be185d] pt-2 pb-3 px-4 text-white overflow-hidden">
       {/* Decorative SVG backdrop */}
       <div className="absolute inset-0 opacity-20 pointer-events-none">
         <svg viewBox="0 0 400 200" className="w-full h-full object-cover">
@@ -21,13 +21,13 @@ export default function Header() {
       </div>
 
       {/* App Header Bar */}
-      <div className="relative z-10 flex items-center justify-between mt-1 px-1">
+      <div className="relative z-10 flex items-center justify-between px-1">
         <div className="flex items-center space-x-2.5">
           <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#9d174d] font-bold text-xl shadow-md border border-white/40">
             <span>ᱟ</span>
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-tight text-white leading-tight">
+            <h1 className="text-xl font-bold tracking-tight text-white leading-tight">
               Santali Translator
             </h1>
             <p className="text-[11px] text-pink-100 font-normal">

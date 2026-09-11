@@ -35,8 +35,18 @@ export default function TranslationCard({ onTranslate, isTranslating, toLang: to
   const maxLength = 5000;
 
   const updateToLang = (lang: string) => {
+    if (lang === fromLang) {
+      setFromLang(toLang);
+    }
     setInternalToLang(lang);
     onToLangChange?.(lang);
+  };
+
+  const handleFromLangChange = (lang: string) => {
+    if (lang === toLang) {
+      updateToLang(fromLang);
+    }
+    setFromLang(lang);
   };
 
   const handleTranslate = () => {
@@ -75,7 +85,7 @@ export default function TranslationCard({ onTranslate, isTranslating, toLang: to
               {languages.map((lang) => (
                 <button
                   key={lang.name}
-                  onClick={() => { setFromLang(lang.name); setShowFromDropdown(false); }}
+                  onClick={() => { handleFromLangChange(lang.name); setShowFromDropdown(false); }}
                   className={`flex items-center space-x-2 w-full px-2.5 py-2 hover:bg-gray-50 text-left ${fromLang === lang.name ? 'bg-pink-50' : ''}`}
                 >
                   {lang.type === "script" ? (
@@ -111,7 +121,7 @@ export default function TranslationCard({ onTranslate, isTranslating, toLang: to
             onClick={() => { setShowToDropdown(!showToDropdown); setShowFromDropdown(false); }}
             className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-2 py-1.5 shadow-xs w-full"
           >
-            <div className="flex items-center space-x-1.5 overflow-hidden">
+            <div className="flex items-center space-x-2 overflow-hidden">
               {languages.find(l => l.name === toLang)?.type === "script" ? (
                 <span className="w-4 h-4 rounded-full bg-[#be185d] text-white flex items-center justify-center text-[9px] shrink-0">
                   {languages.find(l => l.name === toLang)?.icon}
@@ -119,7 +129,7 @@ export default function TranslationCard({ onTranslate, isTranslating, toLang: to
               ) : (
                 <span className="text-sm">{languages.find(l => l.name === toLang)?.icon}</span>
               )}
-              <span className="font-semibold text-gray-800 text-[11px] truncate">{toLang}</span>
+              <span className="font-semibold text-gray-800 text-[12px] truncate">{toLang}</span>
             </div>
             <ChevronDown size={10} className="text-gray-400 shrink-0" />
           </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Home,
+  Heart,
   BookOpen,
   ArrowRightLeft,
   GraduationCap,
@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { id: "home", label: "Home", icon: Home },
+  { id: "favourite", label: "Favourite", icon: Heart },
   { id: "dictionary", label: "Dictionary", icon: BookOpen },
   { id: "translate", label: "Translate", icon: ArrowRightLeft },
   { id: "learn", label: "Learn", icon: GraduationCap },

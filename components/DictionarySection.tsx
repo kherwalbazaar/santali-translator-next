@@ -61,7 +61,11 @@ const saveToStorage = (result: SearchResult) => {
   }
 };
 
-export default function DictionarySection() {
+interface DictionarySectionProps {
+  newWord?: { santali: string; english: string; letter: string } | null;
+}
+
+export default function DictionarySection({ newWord }: DictionarySectionProps) {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -71,6 +75,32 @@ export default function DictionarySection() {
   const [isLoadingWords, setIsLoadingWords] = useState(true);
 
   useEffect(() => {
+    const loadFromStorage = () => {
+      const stored = localStorage.getItem("dictionaryWords");
+      if (stored) {
+        const wordsData: Word[] = JSON.parse(stored);
+        const grouped: Record<string, Word[]> = {};
+        wordsData.forEach((word) => {
+          const letter = word.letter.toUpperCase();
+          if (!grouped[letter]) grouped[letter] = [];
+          grouped[letter].push(word);
+        });
+        const sections: LetterSection[] = Object.keys(grouped)
+          .sort()
+          .map((letter) => ({
+            letter,
+            count: grouped[letter].length,
+            items: grouped[letter],
+          }));
+        setWordSections(sections);
+        setIsLoadingWords(false);
+        return true;
+      }
+      return false;
+    };
+
+    const hasCache = loadFromStorage();
+
     const fetchWords = async () => {
       try {
         const snapshot = await getDocs(collection(db, "words"));
@@ -87,6 +117,8 @@ export default function DictionarySection() {
             letter: data.letter || "",
           };
         });
+
+        localStorage.setItem("dictionaryWords", JSON.stringify(wordsData));
 
         const grouped: Record<string, Word[]> = {};
         wordsData.forEach((word) => {
@@ -106,7 +138,7 @@ export default function DictionarySection() {
         setWordSections(sections);
       } catch (err) {
         console.error("Failed to fetch words from Firestore:", err);
-        setWordSections([]);
+        if (!hasCache) setWordSections([]);
       } finally {
         setIsLoadingWords(false);
       }
@@ -114,6 +146,43 @@ export default function DictionarySection() {
 
     fetchWords();
   }, []);
+
+  useEffect(() => {
+    if (!newWord) return;
+    setWordSections((prev) => {
+      const exists = prev.some((s) =>
+        s.items.some((w) => w.santali === newWord.santali)
+      );
+      if (exists) return prev;
+
+      const newWordItem: Word = {
+        santali: newWord.santali,
+        pos: "Noun",
+        posColor: "pink",
+        meaning: `"${newWord.english}" in Santali`,
+        roman: "",
+        example: newWord.santali,
+        exampleEn: "",
+        letter: newWord.letter,
+      };
+
+      const letter = newWord.letter.toUpperCase();
+      const existing = prev.find((s) => s.letter === letter);
+      if (existing) {
+        return prev.map((s) =>
+          s.letter === letter
+            ? { ...s, count: s.count + 1, items: [...s.items, newWordItem] }
+            : s
+        );
+      }
+      const newSection: LetterSection = {
+        letter,
+        count: 1,
+        items: [newWordItem],
+      };
+      return [...prev, newSection].sort((a, b) => a.letter.localeCompare(b.letter));
+    });
+  }, [newWord]);
 
   const searchInLocalStorage = (term: string): SearchResult | null => {
     const stored = getStoredWords();
@@ -134,11 +203,27 @@ export default function DictionarySection() {
       const translated = data.responseData?.translatedText || "";
 
       if (translated && translated.toLowerCase() !== term.toLowerCase()) {
+        // Fetch a full sentence example
+        let example = translated;
+        try {
+          const exampleSentence = `This is ${term}`;
+          const exRes = await fetch(
+            `https://api.mymemory.translated.net/get?q=${encodeURIComponent(exampleSentence)}&langpair=en|sat`
+          );
+          const exData = await exRes.json();
+          const translatedExample = exData.responseData?.translatedText || "";
+          if (translatedExample && translatedExample.toLowerCase() !== exampleSentence.toLowerCase()) {
+            example = translatedExample;
+          }
+        } catch {
+          // Keep word as example
+        }
+
         return {
           santali: translated,
           english: term,
           meaning: `AI Translation: "${term}" in Santali`,
-          example: translated,
+          example,
           source: "ai",
         };
       }
@@ -201,14 +286,35 @@ export default function DictionarySection() {
     setIsSearching(true);
     setHasSearched(true);
 
-    const localResult = searchInLocalStorage(search);
+    // 1. Search in Firebase wordSections (memory)
+    const dbResult = wordSections
+      .flatMap((s) => s.items)
+      .find(
+        (w) =>
+          w.santali.toLowerCase() === search.toLowerCase() ||
+          w.meaning.toLowerCase().includes(search.toLowerCase())
+      );
+    if (dbResult) {
+      setSearchResults([{
+        santali: dbResult.santali,
+        english: dbResult.meaning.replace(/"/g, "").replace(" in Santali", ""),
+        meaning: dbResult.meaning,
+        example: dbResult.example,
+        source: "database",
+      }]);
+      setIsSearching(false);
+      return;
+    }
 
+    // 2. Search in localStorage
+    const localResult = searchInLocalStorage(search);
     if (localResult) {
       setSearchResults([{ ...localResult, source: "database" }]);
       setIsSearching(false);
       return;
     }
 
+    // 3. Call AI API
     const aiResult = await searchWithAI(search);
 
     if (aiResult) {
