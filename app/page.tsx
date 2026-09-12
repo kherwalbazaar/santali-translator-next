@@ -38,7 +38,7 @@ const searchInLocalStorage = (term: string, from: string, to: string) => {
   ) || null;
 };
 
-const saveToFirestore = async (santali: string, english: string) => {
+const saveToFirestore = async (santali: string, english: string, setNewWord: (word: { santali: string; english: string; letter: string }) => void) => {
   try {
     const letter = english.charAt(0).toUpperCase();
 
@@ -134,10 +134,10 @@ export default function Home() {
         if (isSingleWord) {
           if (from === "en") {
             saveToStorage({ santali: translated, english: text.trim(), meaning: `"${text.trim()}" in Santali`, example: translated });
-            saveToFirestore(translated, text.trim());
+            saveToFirestore(translated, text.trim(), setNewWord);
           } else if (to === "en") {
             saveToStorage({ santali: text.trim(), english: translated, meaning: `"${text.trim()}" in English`, example: text.trim() });
-            saveToFirestore(text.trim(), translated);
+            saveToFirestore(text.trim(), translated, setNewWord);
           }
         }
       } else {
