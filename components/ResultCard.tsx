@@ -127,7 +127,7 @@ export default function ResultCard({ translatedText, inputText, fromLang, toLang
                 >
                   <Icon size={12} />
                 </div>
-                <span className="text-[8px] text-gray-500 mt-1 font-medium">{action.label}</span>
+                <span className="text-[8px] text-pink-600 mt-1 font-medium">{action.label}</span>
               </button>
             );
           })}

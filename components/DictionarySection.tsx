@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, X, Volume2, Heart, ChevronUp, ArrowRight, Sparkles } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, addDoc } from "firebase/firestore";
@@ -122,6 +122,23 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
     return new Set(stored.map((t: { input: string }) => t.input));
   });
   const [speakingWord, setSpeakingWord] = useState<string | null>(null);
+  const [filteredSections, setFilteredSections] = useState<LetterSection[] | null>(null);
+  const catContainerRef = useRef<HTMLDivElement>(null);
+  const catRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const [catIndicator, setCatIndicator] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    const el = catRefs.current.get(activeCategory);
+    const container = catContainerRef.current;
+    if (el && container) {
+      const containerRect = container.getBoundingClientRect();
+      const tabRect = el.getBoundingClientRect();
+      setCatIndicator({
+        left: tabRect.left - containerRect.left,
+        width: tabRect.width,
+      });
+    }
+  }, [activeCategory]);
 
   useEffect(() => {
     const loadFromStorage = () => {
@@ -208,7 +225,7 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
         santali: newWord.santali,
         pos: "Noun",
         posColor: "pink",
-        meaning: `"${newWord.english}" in Santali`,
+        meaning: `"${newWord.english}"`,
         roman: "",
         example: newWord.santali,
         exampleEn: "",
@@ -271,7 +288,7 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
         return {
           santali: translated,
           english: term,
-          meaning: `AI Translation: "${term}" in Santali`,
+          meaning: term,
           example,
           source: "ai",
         };
@@ -395,12 +412,29 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearch(val);
+              if (val.trim()) {
+                const filtered = wordSections.map((section) => ({
+                  ...section,
+                  items: section.items.filter(
+                    (w) =>
+                      w.santali.toLowerCase().includes(val.toLowerCase()) ||
+                      w.meaning.toLowerCase().includes(val.toLowerCase()) ||
+                      w.example.toLowerCase().includes(val.toLowerCase())
+                  ),
+                })).filter((section) => section.items.length > 0);
+                setFilteredSections(filtered);
+              } else {
+                setFilteredSections(null);
+              }
+            }}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             className="w-full text-xs text-gray-700 outline-none bg-transparent relative z-10"
           />
           {search && (
-            <button onClick={() => { setSearch(""); setSearchResults([]); setHasSearched(false); }} className="text-gray-400 hover:text-gray-600 shrink-0">
+            <button onClick={() => { setSearch(""); setSearchResults([]); setHasSearched(false); setFilteredSections(null); }} className="text-gray-400 hover:text-gray-600 shrink-0">
               <X size={14} />
             </button>
           )}
@@ -411,24 +445,6 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
         >
           <ArrowRight size={14} />
         </button>
-      </div>
-
-      {/* Category Pills */}
-      <div className="flex items-center justify-between space-x-2 mb-3.5 text-xs font-medium">
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl shadow-xs transition ${
-              activeCategory === cat.id
-                ? "bg-[#be185d] text-white"
-                : "bg-white text-gray-600 border border-gray-100 hover:border-pink-200"
-            }`}
-          >
-            <span className="text-xs mb-1">{cat.icon}</span>
-            <span className={`text-[11px] ${activeCategory === cat.id ? "font-semibold" : ""}`}>{cat.label}</span>
-          </button>
-        ))}
       </div>
 
       {/* Search Results */}
@@ -447,22 +463,25 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
             </div>
           ) : searchResults.length > 0 ? (
             searchResults.map((result, idx) => (
-              <div key={idx} className="bg-white border border-pink-100 rounded-2xl p-3 shadow-xs">
+              <div key={idx} className="bg-white border border-pink-100 rounded-2xl p-3 shadow-xs flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="flex items-baseline space-x-2">
-                    <span className="text-[#be185d] font-bold text-lg leading-none">{result.santali}</span>
+                    <span className="text-[#be185d] font-bold text-base leading-none">{result.santali}</span>
                     <span className="bg-pink-50 text-pink-700 text-[9px] font-semibold px-2 py-0.5 rounded-full">
                       {result.source === "database" ? "DB" : "AI"}
                     </span>
+                    <span className="text-gray-400 text-[10px]">|</span>
+                    <span className="text-gray-500 text-[10px]">{result.english}</span>
                   </div>
-                  <div className="text-[10px] text-gray-400 font-medium">English: {result.english}</div>
-                  <div className="text-[10px] text-gray-600">{result.meaning}</div>
                   {result.example && (
                     <div className="text-[10px] text-gray-600">
                       <span>Example: </span>
                       <span className="text-[#be185d] font-medium">{result.example}</span>
                     </div>
                   )}
+                </div>
+                <div className="flex items-center text-gray-400">
+                  <button onClick={() => speak(result.santali, setSpeakingWord)} className="hover:text-pink-700"><Volume2 size={16} className={`text-pink-700 ${speakingWord === result.santali ? "animate-pulse" : ""}`} /></button>
                 </div>
               </div>
             ))
@@ -475,7 +494,7 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
       )}
 
       {/* Word Sections */}
-      <div className="relative pr-5">
+      <div className="relative pr-5 -ml-3.5">
         {isLoadingWords ? (
           <div className="text-center py-10">
             <div className="animate-spin w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full mx-auto mb-2"></div>
@@ -486,7 +505,7 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
             No words found in database
           </div>
         ) : (
-          wordSections.map((section) => (
+          (filteredSections || wordSections).map((section) => (
           <div key={section.letter} className="mb-4">
             <div className="bg-pink-50/70 border border-pink-100/80 rounded-xl px-3 py-1.5 flex items-center justify-between mb-2.5">
               <span className="font-extrabold text-gray-800 text-xs">{section.letter}</span>
@@ -500,22 +519,21 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
               {section.items.map((word, idx) => (
                 <div key={idx} className="bg-white border border-gray-100 rounded-2xl p-3 shadow-xs flex items-center justify-between">
                   <div className="space-y-1">
-                    <div className="flex items-baseline space-x-2">
-                      <span className="text-[#be185d] font-bold text-lg leading-none">{word.santali}</span>
-                      <span className={`${posColors[word.posColor]} text-[9px] font-semibold px-2 py-0.5 rounded-full`}>{word.pos}</span>
-                      <span className="text-gray-400 text-[10px]">|</span>
-                      <span className="text-gray-600 text-[10px]">meaning: <strong className="text-gray-800 font-semibold">{word.meaning}</strong></span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-baseline space-x-2">
+                        <span className="text-[#be185d] font-bold text-base leading-none">{word.santali}</span>
+                        <span className={`${posColors[word.posColor]} text-[9px] font-semibold px-2 py-0.5 rounded-full`}>{word.pos}</span>
+                      </div>
+                      <span className="text-[9px] text-gray-400">{word.meaning.replace(/AI Translation: /, "").replace(/ in Santali/, "").replace(/ in English/, "")}</span>
                     </div>
                     <div className="text-[10px] text-gray-400 font-medium">{word.roman}</div>
                     <div className="text-[10px] text-gray-600">
                       <span>Example: </span>
                       <span className="text-[#be185d] font-medium">{word.example}</span>
                     </div>
-                    <div className="text-[10px] text-gray-400 italic">{word.exampleEn}</div>
                   </div>
-                  <div className="flex items-center space-x-2 text-gray-400">
+                  <div className="flex items-center text-gray-400">
                     <button onClick={() => speak(word.santali, setSpeakingWord)} className="hover:text-pink-700"><Volume2 size={16} className={`text-pink-700 ${speakingWord === word.santali ? "animate-pulse" : ""}`} /></button>
-                    <button onClick={() => toggleFavourite(word, setFavs)} className="hover:text-rose-500"><Heart size={16} className={favs.has(word.santali) ? "fill-rose-500 text-rose-500" : ""} /></button>
                   </div>
                 </div>
               ))}

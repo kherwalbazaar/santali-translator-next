@@ -80,7 +80,7 @@ const saveToFirestore = async (santali: string, english: string, setNewWord: (wo
       english,
       pos: "Noun",
       posColor: "pink",
-      meaning: `"${english}" in Santali`,
+      meaning: `"${english}"`,
       roman: "",
       example: exampleSentence,
       exampleEn: `This is ${english}`,
@@ -151,10 +151,10 @@ export default function Home() {
 
         if (isSingleWord) {
           if (from === "en") {
-            saveToStorage({ santali: translated, english: text.trim(), meaning: `"${text.trim()}" in Santali`, example: translated });
+            saveToStorage({ santali: translated, english: text.trim(), meaning: `"${text.trim()}"`, example: translated });
             saveToFirestore(translated, text.trim(), setNewWord);
           } else if (to === "en") {
-            saveToStorage({ santali: text.trim(), english: translated, meaning: `"${text.trim()}" in English`, example: text.trim() });
+            saveToStorage({ santali: text.trim(), english: translated, meaning: `"${text.trim()}"`, example: text.trim() });
             saveToFirestore(text.trim(), translated, setNewWord);
           }
         }
@@ -176,10 +176,12 @@ export default function Home() {
         <>
           <Header />
 
-          <div className="flex-1 -mt-4 px-3.5 pt-2 pb-20 overflow-y-auto md:pb-6">
-            <div className="-mx-3.5">
-              <NavigationPills activeTab={activeTab} onTabChange={setActiveTab} />
-            </div>
+          <div className="flex-1 px-3.5 pt-2 pb-20 overflow-y-auto md:pb-6">
+            {activeTab !== "dictionary" && (
+              <div className="-mx-3.5">
+                <NavigationPills activeTab={activeTab} onTabChange={setActiveTab} />
+              </div>
+            )}
 
         <div className="mt-1.5">
           {activeTab === "translate" && (

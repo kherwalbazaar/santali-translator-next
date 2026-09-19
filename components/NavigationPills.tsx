@@ -39,7 +39,7 @@ export default function NavigationPills({ activeTab, onTabChange }: NavigationPi
   return (
     <div
       ref={containerRef}
-      className="relative flex items-center bg-white p-1 rounded-full shadow-sm border border-gray-100 text-[11px] sm:text-xs font-medium text-gray-600 w-full"
+      className="relative flex items-center bg-white p-1 rounded-full shadow-sm border border-gray-100 text-[11px] sm:text-xs font-medium text-pink-600 w-full"
     >
       {/* Sliding indicator */}
       <div

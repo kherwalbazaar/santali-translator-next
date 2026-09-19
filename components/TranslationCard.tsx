@@ -80,7 +80,7 @@ export default function TranslationCard({ onTranslate, isTranslating, toLang: to
   };
 
   return (
-    <div className="bg-white rounded-2xl p-3.5 pt-2 pb-3.5 shadow-sm border border-gray-100 space-y-2">
+    <div className="bg-pink-100 p-3.5 pt-2 pb-3.5 shadow-sm border border-pink-200 space-y-2">
       {/* Language Switcher Bar */}
       <div className="flex items-center justify-between text-xs relative">
         {/* From */}

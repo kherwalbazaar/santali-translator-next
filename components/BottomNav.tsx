@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState, useEffect } from "react";
 import {
   Heart,
   BookOpen,
@@ -22,32 +23,53 @@ interface BottomNavProps {
 }
 
 export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    const el = tabRefs.current.get(activeTab);
+    const container = containerRef.current;
+    if (el && container) {
+      const containerRect = container.getBoundingClientRect();
+      const tabRect = el.getBoundingClientRect();
+      setIndicator({
+        left: tabRect.left - containerRect.left,
+        width: tabRect.width,
+      });
+    }
+  }, [activeTab]);
+
   return (
     <>
       {/* Mobile bottom bar */}
-      <div className="bg-white border-t border-gray-100 px-3 py-2 flex items-center justify-around fixed bottom-0 left-0 right-0 z-20 md:hidden">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onTabChange(item.id)}
-              className={`flex flex-col items-center transition active:scale-90 ${
-                isActive ? "text-[#be185d]" : "text-gray-400 hover:text-pink-700"
-              }`}
-            >
-              <Icon size={14} />
-              <span
-                className={`mt-0.5 ${
-                  isActive ? "text-[10px] font-semibold" : "text-[10px]"
+      <div className="bg-[#be185d] border-t border-pink-700 py-1.5 fixed bottom-0 left-0 right-0 z-20 md:hidden">
+        <div ref={containerRef} className="relative flex items-center justify-around px-2">
+          <div
+            className="absolute top-0 bottom-0 rounded-md bg-white shadow-md transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-0"
+            style={{
+              left: indicator.left,
+              width: indicator.width,
+            }}
+          />
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                ref={(el) => { if (el) tabRefs.current.set(item.id, el); }}
+                onClick={() => onTabChange(item.id)}
+                className={`relative z-10 flex flex-col items-center transition-colors duration-300 px-3 py-1 active:scale-90 ${
+                  isActive ? "text-[#be185d]" : "text-white/80 hover:text-white"
                 }`}
               >
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
+                <Icon size={14} />
+                <span className="mt-0.5 text-[10px]">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Desktop sidebar */}
@@ -74,7 +96,7 @@ export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                 className={`flex items-center gap-3 px-2.5 lg:px-3 py-2.5 rounded-xl transition active:scale-90 text-sm ${
                   isActive
                     ? "bg-[#fdf2f8] text-[#be185d] font-semibold"
-                    : "text-gray-400 hover:text-pink-700 hover:bg-gray-50"
+                    : "text-pink-400 hover:text-pink-700 hover:bg-gray-50"
                 }`}
               >
                 <Icon size={18} className={isActive ? "text-[#be185d]" : ""} />
