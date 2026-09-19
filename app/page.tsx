@@ -9,6 +9,8 @@ import FooterBanner from "@/components/FooterBanner";
 import BottomNav from "@/components/BottomNav";
 import DictionarySection from "@/components/DictionarySection";
 import FavouritesSection from "@/components/FavouritesSection";
+import HistorySection from "@/components/HistorySection";
+import LearnSection from "@/components/LearnSection";
 import { db } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
 
@@ -27,6 +29,21 @@ const saveToStorage = (word: { santali: string; english: string; meaning: string
     stored.push({ ...word, source: "database" });
     localStorage.setItem("santaliDictionary", JSON.stringify(stored));
   }
+};
+
+const saveToHistory = (input: string, output: string, from: string, to: string) => {
+  if (typeof window === "undefined") return;
+  const history = JSON.parse(localStorage.getItem("translationHistory") || "[]");
+  const newEntry = {
+    input,
+    output,
+    fromLang: from,
+    toLang: to,
+    timestamp: Date.now(),
+  };
+  history.unshift(newEntry);
+  if (history.length > 100) history.pop();
+  localStorage.setItem("translationHistory", JSON.stringify(history));
 };
 
 const searchInLocalStorage = (term: string, from: string, to: string) => {
@@ -130,6 +147,7 @@ export default function Home() {
 
       if (translated && translated.toLowerCase() !== text.trim().toLowerCase()) {
         setTranslatedText(translated);
+        saveToHistory(text.trim(), translated, from, to);
 
         if (isSingleWord) {
           if (from === "en") {
@@ -151,32 +169,51 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-[#f8faf9] min-h-screen flex flex-col justify-between">
-      <Header />
-
-      {activeTab === "translate" ? (
-        <div className="flex-1 -mt-4 px-3.5 pt-4 pb-20 overflow-y-auto space-y-3.5">
-          <NavigationPills activeTab={activeTab} onTabChange={setActiveTab} />
-          <TranslationCard onTranslate={handleTranslate} isTranslating={isTranslating} toLang={toLang} onToLangChange={setToLang} />
-          <ResultCard translatedText={translatedText} inputText={inputText} fromLang={fromLang} toLang={toLang} />
-          <FooterBanner />
-        </div>
-      ) : activeTab === "dictionary" ? (
-        <div className="flex-1 flex flex-col">
-          <DictionarySection newWord={newWord} />
-        </div>
-      ) : activeTab === "favourite" ? (
-        <FavouritesSection />
+    <div className="bg-[#f8faf9] min-h-screen flex flex-col justify-between md:ml-16 lg:ml-56">
+      {activeTab === "learn" ? (
+        <LearnSection onBack={() => setActiveTab("translate")} />
       ) : (
-        <div className="flex-1 -mt-4 px-3.5 pt-4 pb-20 overflow-y-auto space-y-3.5">
-          <NavigationPills activeTab={activeTab} onTabChange={setActiveTab} />
-          <div className="text-center text-gray-400 text-xs py-10">
-            Coming soon...
-          </div>
+        <>
+          <Header />
+
+          <div className="flex-1 -mt-4 px-3.5 pt-2 pb-20 overflow-y-auto md:pb-6">
+            <div className="-mx-3.5">
+              <NavigationPills activeTab={activeTab} onTabChange={setActiveTab} />
+            </div>
+
+        <div className="mt-1.5">
+          {activeTab === "translate" && (
+            <>
+              <TranslationCard
+                onTranslate={handleTranslate}
+                isTranslating={isTranslating}
+                toLang={toLang}
+                onToLangChange={setToLang}
+                inputText={inputText}
+                onTextChange={setInputText}
+                onReset={() => { setInputText(""); setTranslatedText(""); }}
+              />
+              <div className="h-3" />
+              <ResultCard translatedText={translatedText} inputText={inputText} fromLang={fromLang} toLang={toLang} />
+              <FooterBanner />
+            </>
+          )}
+          {activeTab === "history" && (
+            <HistorySection onReuse={(input, from, to) => { setActiveTab("translate"); handleTranslate(input, from, to); }} />
+          )}
+          {activeTab === "favourite" && <FavouritesSection />}
+          {activeTab === "dictionary" && <DictionarySection newWord={newWord} />}
+          {activeTab !== "translate" && activeTab !== "history" && activeTab !== "favourite" && activeTab !== "dictionary" && activeTab !== "learn" && (
+            <div className="text-center text-gray-400 text-xs py-10">
+              Coming soon...
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        </>
+      )}
     </div>
   );
 }

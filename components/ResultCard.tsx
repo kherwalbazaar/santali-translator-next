@@ -25,8 +25,23 @@ export default function ResultCard({ translatedText, inputText, fromLang, toLang
 
   const handleSpeak = () => {
     if (!translatedText || speaking) return;
+    const isSantali = toLang.toLowerCase().includes("santali") || toLang === "sat";
+
+    const voices = window.speechSynthesis.getVoices();
+    let voice = null;
+    if (isSantali) {
+      voice = voices.find((v) => v.lang.startsWith("sat"))
+        || voices.find((v) => v.lang.startsWith("hi"))
+        || voices.find((v) => v.lang.startsWith("bn"))
+        || null;
+    }
+
     const utterance = new SpeechSynthesisUtterance(translatedText);
-    utterance.lang = "en-US";
+    utterance.voice = voice;
+    utterance.lang = isSantali ? "sat-IN" : "en-US";
+    utterance.rate = isSantali ? 0.75 : 0.9;
+    utterance.pitch = isSantali ? 0.85 : 1;
+    utterance.volume = 1;
     utterance.onend = () => setSpeaking(false);
     utterance.onerror = () => setSpeaking(false);
     setSpeaking(true);
@@ -108,11 +123,11 @@ export default function ResultCard({ translatedText, inputText, fromLang, toLang
                 className="flex flex-col items-center group"
               >
                 <div
-                  className={`w-8 h-8 rounded-full ${colors.bg} ${colors.text} flex items-center justify-center text-xs ${colors.hover} transition`}
+                  className={`w-7 h-7 rounded-full ${colors.bg} ${colors.text} flex items-center justify-center text-xs ${colors.hover} transition ${action.label === "Speak" && speaking ? "animate-pulse" : ""}`}
                 >
-                  <Icon size={14} />
+                  <Icon size={12} />
                 </div>
-                <span className="text-[10px] text-gray-500 mt-1 font-medium">{action.label}</span>
+                <span className="text-[8px] text-gray-500 mt-1 font-medium">{action.label}</span>
               </button>
             );
           })}

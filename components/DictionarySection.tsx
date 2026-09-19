@@ -4,13 +4,56 @@ import { useState, useEffect } from "react";
 import { Search, X, Volume2, Heart, ChevronUp, ArrowRight, Sparkles } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, addDoc } from "firebase/firestore";
+import TypewriterLoop from "./TypewriterLoop";
+
+const speak = (text: string, setSpeaking: (v: string | null) => void) => {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  setSpeaking(text);
+
+  const voices = window.speechSynthesis.getVoices();
+  const santaliVoice = voices.find((v) => v.lang.startsWith("sat"))
+    || voices.find((v) => v.lang.startsWith("hi"))
+    || voices.find((v) => v.lang.startsWith("bn"))
+    || null;
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.voice = santaliVoice;
+  utter.lang = "sat-IN";
+  utter.rate = 0.75;
+  utter.pitch = 0.85;
+  utter.volume = 1;
+  utter.onend = () => setSpeaking(null);
+  utter.onerror = () => setSpeaking(null);
+  window.speechSynthesis.speak(utter);
+};
+
+const toggleFavourite = (word: Word, setFavs: React.Dispatch<React.SetStateAction<Set<string>>>) => {
+  const key = word.santali;
+  const stored = JSON.parse(localStorage.getItem("savedTranslations") || "[]");
+  const exists = stored.some((t: { input: string }) => t.input === word.santali);
+  let updated;
+  if (exists) {
+    updated = stored.filter((t: { input: string }) => t.input !== word.santali);
+    setFavs((prev) => { const next = new Set(prev); next.delete(key); return next; });
+  } else {
+    updated = [...stored, {
+      input: word.santali,
+      output: word.meaning.replace(/"/g, "").replace(" in Santali", ""),
+      fromLang: "Santali",
+      toLang: "English",
+      timestamp: Date.now(),
+    }];
+    setFavs((prev) => new Set(prev).add(key));
+  }
+  localStorage.setItem("savedTranslations", JSON.stringify(updated));
+};
 
 const categories = [
   { id: "all", label: "All", icon: "📖" },
   { id: "nouns", label: "Nouns", icon: "🍃" },
   { id: "verbs", label: "Verbs", icon: "🏃" },
   { id: "adjectives", label: "Adjectives", icon: "📚" },
-  { id: "others", label: "Others", icon: "⋯" },
 ];
 
 interface Word {
@@ -73,6 +116,12 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
   const [hasSearched, setHasSearched] = useState(false);
   const [wordSections, setWordSections] = useState<LetterSection[]>([]);
   const [isLoadingWords, setIsLoadingWords] = useState(true);
+  const [favs, setFavs] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    const stored = JSON.parse(localStorage.getItem("savedTranslations") || "[]");
+    return new Set(stored.map((t: { input: string }) => t.input));
+  });
+  const [speakingWord, setSpeakingWord] = useState<string | null>(null);
 
   useEffect(() => {
     const loadFromStorage = () => {
@@ -332,18 +381,26 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
     <div className="flex-1 -mt-4 bg-[#f8faf9] rounded-t-[24px] px-3.5 pt-4 pb-20 overflow-y-auto relative z-10">
       {/* Search Bar */}
       <div className="flex items-center space-x-2 mb-3.5">
-        <div className="flex-1 bg-white border border-gray-200/90 rounded-full px-3.5 py-2 flex items-center space-x-2 shadow-xs">
-          <Search size={14} className="text-gray-400" />
+        <div className="flex-1 bg-white border border-gray-200/90 rounded-full px-3.5 py-2 flex items-center space-x-2 shadow-xs relative">
+          <Search size={14} className="text-gray-400 shrink-0" />
+          {!search && (
+            <div className="absolute left-9 top-1/2 -translate-y-1/2 pointer-events-none">
+              <TypewriterLoop
+                words={["Search Santali word...", "Search English word...", "Try 'hello' or 'ᱟᱨᱟ'", "Search dictionary..."]}
+                speed={80}
+                pause={2000}
+              />
+            </div>
+          )}
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="Search Santali or English word..."
-            className="w-full text-xs text-gray-700 placeholder-gray-400 outline-none bg-transparent"
+            className="w-full text-xs text-gray-700 outline-none bg-transparent relative z-10"
           />
           {search && (
-            <button onClick={() => { setSearch(""); setSearchResults([]); setHasSearched(false); }} className="text-gray-400 hover:text-gray-600">
+            <button onClick={() => { setSearch(""); setSearchResults([]); setHasSearched(false); }} className="text-gray-400 hover:text-gray-600 shrink-0">
               <X size={14} />
             </button>
           )}
@@ -457,8 +514,8 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
                     <div className="text-[10px] text-gray-400 italic">{word.exampleEn}</div>
                   </div>
                   <div className="flex items-center space-x-2 text-gray-400">
-                    <button className="hover:text-pink-700"><Volume2 size={16} className="text-pink-700" /></button>
-                    <button className="hover:text-rose-500"><Heart size={16} /></button>
+                    <button onClick={() => speak(word.santali, setSpeakingWord)} className="hover:text-pink-700"><Volume2 size={16} className={`text-pink-700 ${speakingWord === word.santali ? "animate-pulse" : ""}`} /></button>
+                    <button onClick={() => toggleFavourite(word, setFavs)} className="hover:text-rose-500"><Heart size={16} className={favs.has(word.santali) ? "fill-rose-500 text-rose-500" : ""} /></button>
                   </div>
                 </div>
               ))}

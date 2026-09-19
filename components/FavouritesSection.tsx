@@ -45,8 +45,8 @@ export default function FavouritesSection() {
   }
 
   return (
-    <div className="flex-1 px-3.5 pt-4 pb-20 overflow-y-auto space-y-3">
-      <div className="flex items-center justify-between mb-2">
+    <div className="flex-1 px-3.5 pt-4 pb-20 overflow-y-auto space-y-2">
+      <div className="flex items-center justify-between mb-1">
         <h2 className="text-sm font-bold text-gray-800">Favourites</h2>
         <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
           {items.length} saved
@@ -55,46 +55,46 @@ export default function FavouritesSection() {
 
       {items.map((item, idx) => (
         <div
-          key={item.timestamp}
-          className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3"
+          key={`${item.timestamp}-${idx}`}
+          className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5"
         >
           <div className="flex items-start justify-between">
-            <div className="flex-1 space-y-2">
-              <div className="bg-pink-50 rounded-xl px-3 py-2">
-                <span className="text-[9px] text-pink-500 font-medium block mb-0.5">
+            <div className="flex-1 space-y-1">
+              <div className="bg-pink-50 rounded-lg px-2 py-1.5">
+                <span className="text-[8px] text-pink-500 font-medium block mb-0.5">
                   {item.fromLang}
                 </span>
-                <p className="text-xs text-gray-800 font-medium">{item.input}</p>
+                <p className="text-[11px] text-gray-800 font-medium">{item.input}</p>
               </div>
 
               <div className="flex justify-center">
-                <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
-                  <span className="text-[8px] text-gray-400">↓</span>
+                <div className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center">
+                  <span className="text-[7px] text-gray-400">↓</span>
                 </div>
               </div>
 
-              <div className="bg-purple-50 rounded-xl px-3 py-2">
-                <span className="text-[9px] text-purple-500 font-medium block mb-0.5">
+              <div className="bg-purple-50 rounded-lg px-2 py-1.5">
+                <span className="text-[8px] text-purple-500 font-medium block mb-0.5">
                   {item.toLang}
                 </span>
-                <p className="text-xs text-gray-800 font-medium">{item.output}</p>
+                <p className="text-[11px] text-gray-800 font-medium">{item.output}</p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-1 border-t border-gray-50">
+          <div className="flex items-center justify-end gap-2 pt-0.5 border-t border-gray-50">
             <button
               onClick={() => handleCopy(item.output, idx)}
-              className="flex items-center space-x-1 text-gray-400 hover:text-pink-600 transition text-[10px]"
+              className="flex items-center space-x-1 text-gray-400 hover:text-pink-600 transition text-[9px]"
             >
-              {copiedIdx === idx ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+              {copiedIdx === idx ? <Check size={10} className="text-green-500" /> : <Copy size={10} />}
               <span>{copiedIdx === idx ? "Copied" : "Copy"}</span>
             </button>
             <button
               onClick={() => handleDelete(idx)}
-              className="flex items-center space-x-1 text-gray-400 hover:text-red-500 transition text-[10px]"
+              className="flex items-center space-x-1 text-gray-400 hover:text-red-500 transition text-[9px]"
             >
-              <Trash2 size={12} />
+              <Trash2 size={10} />
               <span>Remove</span>
             </button>
           </div>
