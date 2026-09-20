@@ -403,7 +403,7 @@ export default function DictionarySection({ newWord }: DictionarySectionProps) {
           {!search && (
             <div className="absolute left-9 top-1/2 -translate-y-1/2 pointer-events-none">
               <TypewriterLoop
-                words={["Search Santali word...", "Search English word...", "Try 'hello' or 'ᱟᱨᱟ'", "Search dictionary..."]}
+                words={["Search Santali word...", "Search English word...", "", "Search dictionary..."]}
                 speed={80}
                 pause={2000}
               />

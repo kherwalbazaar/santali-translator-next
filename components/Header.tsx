@@ -1,6 +1,8 @@
 "use client";
 
-export default function Header() {
+export default function Header({ activeTab }: { activeTab?: string }) {
+  const isDictionary = activeTab === "dictionary";
+
   return (
     <div className="relative bg-gradient-to-b from-[#831843] via-[#9d174d] to-[#be185d] pt-2 pb-3 px-4 md:px-6 md:py-4 text-white overflow-hidden">
       {/* Decorative SVG backdrop */}
@@ -26,10 +28,10 @@ export default function Header() {
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white leading-tight">
-              Santali Translator
+              {isDictionary ? "Santali Dictionary" : "Santali Translator"}
             </h1>
             <p className="text-[11px] md:text-xs text-pink-100 font-normal">
-              Connect Languages • Preserve Culture
+              {isDictionary ? "Search words & meanings" : "Connect Languages • Preserve Culture"}
             </p>
           </div>
         </div>

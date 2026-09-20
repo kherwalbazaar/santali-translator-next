@@ -107,7 +107,7 @@ export default function ResultCard({ translatedText, inputText, fromLang, toLang
           <span className="font-bold text-gray-800 text-[12px]">Translation</span>
         </div>
 
-        <p className={`text-xs min-h-[32px] ${translatedText ? "text-gray-800" : "text-gray-400 italic"}`}>
+        <p className={`text-xs min-h-[120px] ${translatedText ? "text-gray-800" : "text-gray-400 italic"}`}>
           {translatedText || "Translation will appear here..."}
         </p>
 

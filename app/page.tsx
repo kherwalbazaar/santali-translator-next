@@ -59,16 +59,16 @@ const saveToFirestore = async (santali: string, english: string, setNewWord: (wo
   try {
     const letter = english.charAt(0).toUpperCase();
 
-    // Fetch a full sentence example in background
     let exampleSentence = santali;
     try {
-      const exampleText = `This is ${english}`;
-      const exRes = await fetch(
-        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(exampleText)}&langpair=en|sat`
-      );
+      const exRes = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: `This is ${english}`, from: "en", to: "sat" }),
+      });
       const exData = await exRes.json();
-      const translatedExample = exData.responseData?.translatedText || "";
-      if (translatedExample && translatedExample.toLowerCase() !== exampleText.toLowerCase()) {
+      const translatedExample = exData.translatedText || "";
+      if (translatedExample && translatedExample.toLowerCase() !== `this is ${english}`.toLowerCase()) {
         exampleSentence = translatedExample;
       }
     } catch {
@@ -124,25 +124,20 @@ export default function Home() {
       let translated = "";
 
       try {
-        const res = await fetch(
-          `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`
-        );
+        const res = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text.trim(), from, to }),
+        });
         const data = await res.json();
-        translated = data?.responseData?.translatedText || "";
-      } catch {
-        // MyMemory failed, try alternative
-      }
-
-      if (!translated || translated.toLowerCase() === text.trim().toLowerCase()) {
-        try {
-          const res = await fetch(
-            `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(text)}`
-          );
-          const data = await res.json();
-          translated = data?.[0]?.map((item: [string]) => item[0]).join("") || "";
-        } catch {
-          // Google fallback also failed
+        if (data.error) {
+          setTranslatedText(data.error);
+          setIsTranslating(false);
+          return;
         }
+        translated = data?.translatedText || "";
+      } catch {
+        // Translation failed
       }
 
       if (translated && translated.toLowerCase() !== text.trim().toLowerCase()) {
@@ -174,7 +169,7 @@ export default function Home() {
         <LearnSection onBack={() => setActiveTab("translate")} />
       ) : (
         <>
-          <Header />
+          <Header activeTab={activeTab} />
 
           <div className="flex-1 px-3.5 pt-2 pb-20 overflow-y-auto md:pb-6">
             {activeTab !== "dictionary" && (

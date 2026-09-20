@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ArrowRightLeft, X, Mic, Camera, Image, Languages } from "lucide-react";
+import { ChevronDown, ArrowRightLeft, X, Mic, Camera, Image, Languages, Check, Clipboard } from "lucide-react";
 import { useEffect } from "react";
 import TypewriterLoop from "./TypewriterLoop";
 
@@ -80,7 +80,7 @@ export default function TranslationCard({ onTranslate, isTranslating, toLang: to
   };
 
   return (
-    <div className="bg-pink-100 p-3.5 pt-2 pb-3.5 shadow-sm border border-pink-200 space-y-2">
+    <div className="bg-white rounded-2xl p-3.5 pt-2 pb-3.5 shadow-sm border border-gray-100 space-y-2">
       {/* Language Switcher Bar */}
       <div className="flex items-center justify-between text-xs relative">
         {/* From */}
@@ -107,16 +107,19 @@ export default function TranslationCard({ onTranslate, isTranslating, toLang: to
                 <button
                   key={lang.name}
                   onClick={() => { handleFromLangChange(lang.name); setShowFromDropdown(false); }}
-                  className={`flex items-center space-x-2 w-full px-2.5 py-2 hover:bg-gray-50 text-left ${fromLang === lang.name ? 'bg-pink-50' : ''}`}
+                  className={`flex items-center justify-between w-full px-2.5 py-2 hover:bg-gray-50 text-left ${fromLang === lang.name ? 'bg-pink-50' : ''}`}
                 >
-                  {lang.type === "script" ? (
-                    <span className="w-4 h-4 rounded-full bg-[#be185d] text-white flex items-center justify-center text-[9px] shrink-0">
-                      {lang.icon}
-                    </span>
-                  ) : (
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 ${lang.color}`}>{lang.icon}</span>
-                  )}
-                  <span className="text-[11px] text-gray-700">{lang.name}</span>
+                  <div className="flex items-center space-x-2">
+                    {lang.type === "script" ? (
+                      <span className="w-4 h-4 rounded-full bg-[#be185d] text-white flex items-center justify-center text-[9px] shrink-0">
+                        {lang.icon}
+                      </span>
+                    ) : (
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 ${lang.color}`}>{lang.icon}</span>
+                    )}
+                    <span className={`text-[11px] ${fromLang === lang.name ? 'text-gray-900 font-bold' : 'text-gray-500 font-normal'}`}>{lang.name}</span>
+                  </div>
+                  {fromLang === lang.name && <Check size={14} className="text-green-500" />}
                 </button>
               ))}
             </div>
@@ -124,10 +127,10 @@ export default function TranslationCard({ onTranslate, isTranslating, toLang: to
         </div>
 
         {/* Swap Button */}
-        <div className="mx-2 pt-3">
+        <div className="mx-2 flex-shrink-0">
           <button
             onClick={() => { setFromLang(toLang); updateToLang(fromLang); }}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition shadow-xs"
+            className="w-8 h-8 rounded-full bg-[#be185d] flex items-center justify-center text-white hover:bg-[#9d174d] transition shadow-xs"
           >
             <ArrowRightLeft size={11} />
           </button>
@@ -157,16 +160,19 @@ export default function TranslationCard({ onTranslate, isTranslating, toLang: to
                 <button
                   key={lang.name}
                   onClick={() => { updateToLang(lang.name); setShowToDropdown(false); }}
-                  className={`flex items-center space-x-2 w-full px-2.5 py-2 hover:bg-gray-50 text-left ${toLang === lang.name ? 'bg-pink-50' : ''}`}
+                  className={`flex items-center justify-between w-full px-2.5 py-2 hover:bg-gray-50 text-left ${toLang === lang.name ? 'bg-pink-50' : ''}`}
                 >
-                  {lang.type === "script" ? (
-                    <span className="w-4 h-4 rounded-full bg-[#be185d] text-white flex items-center justify-center text-[9px] shrink-0">
-                      {lang.icon}
-                    </span>
-                  ) : (
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 ${lang.color}`}>{lang.icon}</span>
-                  )}
-                  <span className="text-[11px] text-gray-700">{lang.name}</span>
+                  <div className="flex items-center space-x-2">
+                    {lang.type === "script" ? (
+                      <span className="w-4 h-4 rounded-full bg-[#be185d] text-white flex items-center justify-center text-[9px] shrink-0">
+                        {lang.icon}
+                      </span>
+                    ) : (
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 ${lang.color}`}>{lang.icon}</span>
+                    )}
+                    <span className={`text-[11px] ${toLang === lang.name ? 'text-gray-900 font-bold' : 'text-gray-500 font-normal'}`}>{lang.name}</span>
+                  </div>
+                  {toLang === lang.name && <Check size={14} className="text-green-500" />}
                 </button>
               ))}
             </div>
@@ -188,18 +194,32 @@ export default function TranslationCard({ onTranslate, isTranslating, toLang: to
               </div>
             )}
             <textarea
-              rows={3}
+              rows={6}
               value={currentText}
               onChange={(e) => updateText(e.target.value.slice(0, maxLength))}
-              className="w-full text-xs text-gray-700 outline-none resize-none bg-transparent relative z-10"
+              className="w-full text-xs text-gray-700 outline-none resize-none bg-transparent relative z-10 min-h-[120px]"
             />
           </div>
-          {currentText && (
+          {currentText ? (
             <button
               onClick={handleReset}
-              className="text-gray-400 hover:text-gray-600 text-xs ml-1 mt-0.5"
+              className="flex items-center space-x-1 text-pink-600 hover:text-pink-700 text-[11px] ml-1 mt-0.5"
             >
-              <X size={14} />
+              <X size={12} />
+              <span>Clear</span>
+            </button>
+          ) : (
+            <button
+              onClick={async () => {
+                try {
+                  const clipText = await navigator.clipboard.readText();
+                  if (clipText) updateText(clipText.slice(0, maxLength));
+                } catch {}
+              }}
+              className="flex items-center space-x-1 text-pink-600 hover:text-pink-700 text-[11px] font-medium ml-1 mt-0.5"
+            >
+              <Clipboard size={12} />
+              <span>Paste</span>
             </button>
           )}
         </div>
